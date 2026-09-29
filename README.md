@@ -71,3 +71,7 @@ Use the analogous `OPENROUTER_*` variables for OpenRouter. Review current [NVIDI
 Deploy a personal, non-commercial demo to Vercel Hobby only after setting the same server environment variables in the project settings. [Vercel Hobby](https://vercel.com/docs/plans/hobby) is free for personal projects and small-scale applications under fair-use guidelines; it is non-commercial, and an exceeded feature commonly pauses until its rolling limit resets.
 
 [Supabase Free](https://supabase.com/pricing) is $0 and allows two active free projects. Per [Supabase billing guidance](https://supabase.com/docs/guides/platform/billing-on-supabase), inactive free projects can pause after one week. Limits, pauses, terms, and provider availability change, so operators must re-check the linked official pages rather than relying on fine-grained quotas here.
+
+## Contributors
+
+- Codex (OpenAI AI coding assistant) — contributed project documentation.
