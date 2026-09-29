@@ -1,0 +1,8 @@
+node_modules/
+.next/
+.env.local
+.env
+coverage/
+*.tsbuildinfo
+.DS_Store
+ashoka-site/
