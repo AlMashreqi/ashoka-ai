@@ -10,6 +10,13 @@ A local-first, source-grounded assistant for Ashoka University's Computer Scienc
 
 The [crawler](src/lib/crawl/crawler.ts), [indexer](src/lib/indexing/indexer.ts), [retriever](src/lib/rag/retrieve.ts), and [answer validator](src/lib/rag/citations.ts) implement these stages. Replacing or re-indexing a page changes the corpus revision, so cached answers from an older index are not reused. Cached answers also expire after `CACHE_TTL_SECONDS` (one day by default).
 
+### RAG and embedding implementation
+
+- **Build the index:** The crawler extracts text blocks from HTML and PDFs, keeping their heading trail and PDF page number. The [chunker](src/lib/crawl/chunk.ts) groups blocks by heading and page, then splits text at sentence boundaries where possible into roughly 1,500-character chunks with 200 characters of overlap. A document hash lets the crawler skip unchanged pages; chunk hashes help remove duplicate excerpts during retrieval.
+- **Create embeddings:** The [provider layer](src/lib/ai/factory.ts) sends chunk text to Ollama's `/api/embed` endpoint by default. It checks that each response contains one finite 1,024-value vector per chunk before storing it in Supabase's `document_chunks.embedding` pgvector column. The same embedding model turns each incoming question into a vector. Changing models requires `npm run reindex` so stored chunks and questions use the same vector space.
+- **Retrieve evidence:** The [SQL search function](supabase/migrations/202609290001_hybrid_search_chunks_return_contract.sql) ranks chunks both by PostgreSQL full-text search and by pgvector cosine distance (`<=>`). It combines those rankings with reciprocal rank fusion. Semantic-only hits must meet `RETRIEVAL_MIN_SCORE` (0.60 by default); text matches can still qualify below that score. The retriever removes duplicate chunk hashes, keeps at most two chunks per page, and sends up to five excerpts to the chat model.
+- **Generate and check:** The [answer step](src/lib/rag/answer.ts) asks the chat model to use only those numbered excerpts. The server checks citation numbers and official source URLs before returning the answer and source links. It retries one invalid model response, then abstains if it still cannot produce a valid cited answer. The [cache](src/lib/rag/cache.ts) stores successful answers by question, corpus revision, embedding model, retrieval settings, and prompt version; a re-indexed corpus therefore gets fresh answers.
+
 ## Local setup
 
 Node.js 22.13 or later, a Supabase project, and Ollama are required. The default chat model runs locally; Supabase still stores the index and cache.
@@ -71,7 +78,3 @@ Use the analogous `OPENROUTER_*` variables for OpenRouter. Review current [NVIDI
 Deploy a personal, non-commercial demo to Vercel Hobby only after setting the same server environment variables in the project settings. [Vercel Hobby](https://vercel.com/docs/plans/hobby) is free for personal projects and small-scale applications under fair-use guidelines; it is non-commercial, and an exceeded feature commonly pauses until its rolling limit resets.
 
 [Supabase Free](https://supabase.com/pricing) is $0 and allows two active free projects. Per [Supabase billing guidance](https://supabase.com/docs/guides/platform/billing-on-supabase), inactive free projects can pause after one week. Limits, pauses, terms, and provider availability change, so operators must re-check the linked official pages rather than relying on fine-grained quotas here.
-
-## Contributors
-
-- Codex (OpenAI AI coding assistant) — contributed project documentation.
